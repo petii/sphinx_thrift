@@ -135,8 +135,7 @@ class ThriftService(ThriftObject):
         module_name = self.options['module'] + '.'
         signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
-        return Signature(self.objtype, module_name + sig,
-                         self.options['module'])
+        return Signature(self.objtype, sig, self.options['module'])
 
 
 def parameter_list(arg: str) -> List[Tuple[str, str]]:
@@ -169,7 +168,7 @@ class ThriftServiceMethod(ThriftObject):
                 first = False
             else:
                 signode += desc_addname(', ', ', ')
-            signode += desc_type(type_ +' ', type_ + ' ')
+            signode += desc_type(type_ + ' ', type_ + ' ')
             signode += desc_addname(name, name)
         signode += desc_addname(')', ')')
         return Signature(self.objtype, service_name + sig,
@@ -195,10 +194,12 @@ class ThriftIndex(Index):
         for name, (docname, objtype,
                    signature) in self.domain.data['objects'].items():
             entries.append([name.name, 0, docname, signature, objtype, '', ''])
-        content = []
-        for key, group in groupby(entries, key=lambda t: t[0][0].lower()):
-            content.append((key, list(group)))
-        return content, False
+        content: Dict[str, list] = {}
+        for key, group in groupby(entries, key=lambda t: t[0][0].upper()):
+            if key not in content:
+                content[key] = []
+            content[key].extend(group)
+        return sorted(content.items(), key=lambda t: t[0]), False
 
 
 class ThriftDomain(Domain):
