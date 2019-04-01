@@ -139,18 +139,39 @@ class ThriftService(ThriftObject):
                          self.options['module'])
 
 
+def parameter_list(arg: str) -> List[Tuple[str, str]]:
+    if arg is None:
+        return []
+    return [(p.split(';')[0], p.split(';')[1]) for p in arg.split()]
+
+
 class ThriftServiceMethod(ThriftObject):
     required_arguments = 1
     option_spec = {
         'module': unchanged_required,
-        'service': unchanged_required
+        'service': unchanged_required,
+        'parameters': parameter_list,
+        'return_type': unchanged_required,
+        'oneway': flag
     }
 
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
-        annotation = 'method'
-        signode += desc_annotation(annotation, annotation)
+        if 'oneway' in self.options:
+            signode += desc_annotation('oneway', 'oneway')
+        signode += desc_type(self.options['return_type'] + ' ',
+                             self.options['return_type'] + ' ')
         service_name = self.options['service'] + '.'
         signode += desc_name(sig, sig)
+        signode += desc_addname('(', '(')
+        first = True
+        for name, type_ in self.options['parameters']:
+            if first:
+                first = False
+            else:
+                signode += desc_addname(', ', ', ')
+            signode += desc_type(type_ +' ', type_ + ' ')
+            signode += desc_addname(name, name)
+        signode += desc_addname(')', ')')
         return Signature(self.objtype, service_name + sig,
                          self.options['module'])
 

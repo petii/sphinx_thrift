@@ -60,23 +60,16 @@ class ThriftModuleDocumenter(ThriftDocumenter):
         self.module = load_module(f'{self.env.doctreedir}/{self.name}.json')
         self._add_line(f'.. thrift:module:: {self.module.name}')
         self._add_line('')
+        for ns in self.module.namespaces:
+            self._add_line(f'   :{ns.language}: :code:`{ns.name}`')
+        self._add_line('')
         self._add_line(f'   {self.module.doc}')
         self._add_line('')
-        self._generate_namespaces()
         self._generate_constants()
         self._generate_typedefs()
         self._generate_enums()
         self._generate_structs()
         self._generate_services()
-
-    def _generate_namespaces(self) -> None:
-        if not self.module.namespaces:
-            return
-        self._add_line('Language mapping')
-        self._add_line('----------------')
-        for ns in self.module.namespaces:
-            self._add_line(f'* {ns.language}: :code:`{ns.name}`')
-        self._add_line('')
 
     def _generate_constants(self) -> None:
         if not self.module.constants:
@@ -124,9 +117,6 @@ class ThriftModuleDocumenter(ThriftDocumenter):
         self._add_line(f'   {struct.doc}')
         self._add_line('')
         for m in struct.fields:
-            self._add_line(f'   :{m.name}: {m.doc}')
-        self._add_line('')
-        for m in struct.fields:
             self._add_line(f'   .. thrift:struct_field:: {m.name}')
             self._add_line(f'      :module: {self.module.name}')
             self._add_line(f'      :struct: {struct.name}')
@@ -152,6 +142,14 @@ class ThriftModuleDocumenter(ThriftDocumenter):
         self._add_line(f'   .. thrift:service_method:: {method.name}')
         self._add_line(f'      :module: {self.module.name}')
         self._add_line(f'      :service: {service.name}')
+        self._add_line(f'      :return_type: {method.returnTypeId}')
+        params = ' '.join(f'{p.name};{p.typeId}' for p in method.arguments)
+        self._add_line(f'      :parameters: {params}')
+        if method.oneway:
+            self._add_line('      :oneway:')
+        self._add_line('')
+        for p in method.arguments:
+            self._add_line(f'      :{p.name}: {p.doc}')
         self._add_line('')
         doc = method.doc.replace('\n', ' ')
         self._add_line(f'      {doc}')
