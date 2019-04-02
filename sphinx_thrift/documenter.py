@@ -4,7 +4,8 @@ from subprocess import check_call
 
 from sphinx.ext.autodoc import Documenter, ModuleDocumenter
 
-from sphinx_thrift.thrift_ast import (load_module, Constant, Typedef, Enum,
+import sphinx_thrift.thrift_ast as ast
+from sphinx_thrift.thrift_ast import (Constant, Typedef, Enum,
                                       Struct, Service, Function)
 
 
@@ -12,7 +13,7 @@ def document_constant(documenter: Documenter, cons: Constant) -> None:
     source_name = documenter.get_sourcename()
     documenter.add_line(f'.. thrift:constant:: {cons.name}', source_name)
     documenter.add_line(f'   :module: {documenter.module.name}', source_name)
-    documenter.add_line(f'   :type: {cons.typeId}', source_name)
+    documenter.add_line(f'   :type: {cons.type_}', source_name)
     documenter.add_line('', source_name)
     documenter.add_line(f'   {cons.doc}', source_name)
 
@@ -21,9 +22,20 @@ def document_typedef(documenter: Documenter, td: Typedef) -> None:
     source_name = documenter.get_sourcename()
     documenter.add_line(f'.. thrift:typedef:: {td.name}', source_name)
     documenter.add_line(f'   :module: {documenter.module.name}', source_name)
-    documenter.add_line(f'   :target: {td.typeId}', source_name)
+    documenter.add_line(f'   :target: {td.type_}', source_name)
     documenter.add_line('', source_name)
     documenter.add_line(f'   {td.doc}', source_name)
+
+
+def typeId(type_: ast.Type) -> str:
+    dispatch = {
+        ast.ListType: lambda _: 'list',
+        ast.SetType: lambda _: 'set',
+        ast.MapType: lambda _: 'map',
+        ast.ReferenceType: lambda r: r.name,
+        str: lambda s: s
+    }
+    return dispatch[type_.__class__](type_)
 
 
 class ThriftDocumenter(Documenter):
@@ -33,6 +45,7 @@ class ThriftDocumenter(Documenter):
 
 class ThriftModuleDocumenter(ThriftDocumenter):
     objtype = 'thrift_module'
+    module: ast.Module
 
     def __init__(self, directive: str, name: str, indent: str = '') -> None:
         super().__init__(directive, name, indent)
@@ -55,9 +68,11 @@ class ThriftModuleDocumenter(ThriftDocumenter):
                  real_modname: str = None,
                  check_module: bool = False,
                  all_members: bool = False) -> None:
+        from sphinx_thrift.parser import load_module
+
         self.env.note_dependency(self.filename)
-        check_call(['thrift', '--gen', 'json', '--out', self.env.doctreedir, self.filename])
-        self.module = load_module(f'{self.env.doctreedir}/{self.name}.json')
+        check_call(['thrift', '--gen', 'xml', '--out', self.env.doctreedir, self.filename])
+        self.module = load_module(f'{self.env.doctreedir}/{self.name}.xml')
         self._add_line(f'.. thrift:module:: {self.module.name}')
         self._add_line('')
         for ns in self.module.namespaces:
@@ -93,10 +108,13 @@ class ThriftModuleDocumenter(ThriftDocumenter):
         self._add_line(f'.. thrift:enum:: {enum.name}')
         self._add_line(f'   :module: {self.module.name}')
         self._add_line('')
-        for name, value in enum.members.items():
-            self._add_line(f'   .. thrift:enum_field:: {name}')
+        for member in enum.members:
+            self._add_line(f'   .. thrift:enum_field:: {member.name}')
             self._add_line(f'      :module: {self.module.name}')
             self._add_line(f'      :enum: {enum.name}')
+            self._add_line('')
+            self._add_line(f'      {member.doc}')
+            self._add_line('')
         self._add_line('')
 
     def _generate_enums(self) -> None:
@@ -120,7 +138,7 @@ class ThriftModuleDocumenter(ThriftDocumenter):
             self._add_line(f'   .. thrift:struct_field:: {m.name}')
             self._add_line(f'      :module: {self.module.name}')
             self._add_line(f'      :struct: {struct.name}')
-            self._add_line(f'      :type: {m.typeId}')
+            self._add_line(f'      :type: {m.type_}')
             self._add_line('')
             if m.default is not None:
                 self._add_line(f'      :default: {m.default}')
@@ -142,8 +160,8 @@ class ThriftModuleDocumenter(ThriftDocumenter):
         self._add_line(f'   .. thrift:service_method:: {method.name}')
         self._add_line(f'      :module: {self.module.name}')
         self._add_line(f'      :service: {service.name}')
-        self._add_line(f'      :return_type: {method.returnTypeId}')
-        params = ' '.join(f'{p.name};{p.typeId}' for p in method.arguments)
+        self._add_line(f'      :return_type: {method.returnType}')
+        params = ' '.join(f'{p.name};{typeId(p.type_)}' for p in method.arguments)
         self._add_line(f'      :parameters: {params}')
         if method.oneway:
             self._add_line('      :oneway:')
