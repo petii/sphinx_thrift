@@ -18,6 +18,7 @@ class Tag(Enum):
     EXCEPTION = 'exception'
     SERVICE = 'service'
     METHOD = 'method'
+    THROWS = 'throws'
 
 
 def parse_list_type(root: ET.Element) -> ast.ListType:
@@ -114,6 +115,10 @@ def parse_arg(root: ET.Element) -> ast.Field:
     return _parse_field_with_tag(Tag.ARG.value, root)
 
 
+def parse_throws(root: ET.Element) -> ast.Field:
+    return _parse_field_with_tag(Tag.THROWS.value, root)
+
+
 def parse_struct(root: ET.Element) -> ast.Struct:
     assert (root.tag == Tag.STRUCT.value)
     return ast.Struct(
@@ -143,7 +148,8 @@ def parse_method(root: ET.Element) -> ast.Function:
         doc=root.get('doc', ''),
         oneway=root.get('oneway', 'false') == 'true',
         returnType=parse_type(returns),
-        arguments=list(map(parse_arg, root.findall(Tag.ARG.value))))
+        arguments=list(map(parse_arg, root.findall(Tag.ARG.value))),
+        exceptions=list(map(parse_throws, root.findall(Tag.THROWS.value))))
 
 
 def parse_service(root: ET.Element) -> ast.Service:

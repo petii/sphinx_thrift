@@ -206,17 +206,22 @@ class ThriftModuleDocumenter(ThriftDocumenter):
     def _generate_method(self, service: Service, method: Function) -> None:
         params = ' '.join(
             f'{p.name};{typeId(p.type_)}' for p in method.arguments)
+        exceptions = ' '.join(
+            f'{p.name};{typeId(p.type_)}' for p in method.exceptions)
         attributes = {
             'module': self.module.name,
             'service': service.name,
             'return_type': typeId(method.returnType),
-            'parameters': params
+            'parameters': params,
+            'exceptions': exceptions
         }
         if method.oneway:
             attributes['oneway'] = ''
         fields = []
         for p in method.arguments:
             fields.append(('param', (p.name, p.doc)))
+        for e in method.exceptions:
+            fields.append(('throws', (e.name, e.doc)))
         self.method_generator.generate(
             method.name, method.doc, attributes=attributes, fields=fields)
 

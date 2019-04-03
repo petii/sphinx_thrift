@@ -89,6 +89,7 @@ class Function:
     oneway: bool
     returnType: Type
     arguments: List[Field]
+    exceptions: List[Field]
     doc: str = ''
 
 

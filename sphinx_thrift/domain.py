@@ -187,6 +187,7 @@ class ThriftServiceMethod(ThriftObject):
         'module': unchanged_required,
         'service': unchanged_required,
         'parameters': parameter_list,
+        'exceptions': parameter_list,
         'return_type': unchanged_required,
         'oneway': flag
     }
@@ -198,7 +199,15 @@ class ThriftServiceMethod(ThriftObject):
             names=('param', ),
             typenames=('type', ),
             typerolename='field',
-            can_collapse=True)
+            can_collapse=True),
+        docfields.TypedField(
+            'exception',
+            label='Exceptions',
+            names=('throws',),
+            typenames=('type',),
+            typerolename='field',
+            can_collapse=True
+        )
     ]
 
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
@@ -219,6 +228,19 @@ class ThriftServiceMethod(ThriftObject):
             signode += make_desc_type(' ')
             signode += desc_addname(name, name)
         signode += desc_addname(')', ')')
+        first = True
+        if self.options['exceptions']:
+            signode += desc_addname(' throws (', ' throws (')
+        for name, type_ in self.options['exceptions']:
+            if first:
+                first = False
+            else:
+                signode += desc_addname(', ', ', ')
+            signode.extend(parse_type(type_, make_desc_type))
+            signode += make_desc_type(' ')
+            signode += desc_addname(name, name)
+        if self.options['exceptions']:
+            signode += desc_addname(')', ')')
         return Signature(self.objtype, service_name + sig,
                          self.options['module'])
 
