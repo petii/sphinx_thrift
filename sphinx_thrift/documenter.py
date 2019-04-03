@@ -43,9 +43,9 @@ class _DirectiveGenerator:
             self.add_line('   :{}: {}'.format(*item))
         self.add_line('')
 
-    def add_fields(self,
-                   fields: Dict[str, Union[str, Tuple[str, str]]]) -> None:
-        for name, value in fields.items():
+    def add_fields(self, fields: List[Tuple[str, Union[str, Tuple[str, str]]]]
+                   ) -> None:
+        for name, value in fields:
             if isinstance(value, str):
                 self.add_line('   :{}: {}'.format(name, value))
             else:
@@ -60,7 +60,8 @@ class _DirectiveGenerator:
                  name: str,
                  doc: str,
                  attributes: Dict[str, str] = {},
-                 fields: Dict[str, Union[str, Tuple[str, str]]] = {}) -> None:
+                 fields: List[Tuple[str, Union[str, Tuple[str, str]]]] = []
+                 ) -> None:
         self.add_header(name, attributes)
         self.add_fields(fields)
         self.add_doc(doc)
@@ -123,10 +124,8 @@ class ThriftModuleDocumenter(ThriftDocumenter):
         self.module_generator.generate(
             self.module.name,
             self.module.doc,
-            fields={
-                ns.language: ':code:`' + ns.name + '`'
-                for ns in self.module.namespaces
-            })
+            fields=[(ns.language, ':code:`' + ns.name + '`')
+                    for ns in self.module.namespaces])
         self._generate_constants()
         self._generate_typedefs()
         self._generate_enums()
@@ -213,12 +212,12 @@ class ThriftModuleDocumenter(ThriftDocumenter):
         }
         if method.oneway:
             attributes['oneway'] = ''
+        fields = []
+        for p in method.arguments:
+            fields.append(('param', (p.name, p.doc)))
+            fields.append(('type', (p.name, typeId(p.type_))))
         self.method_generator.generate(
-            method.name,
-            method.doc,
-            attributes=attributes,
-            fields={p.name: p.doc
-                    for p in method.arguments})
+            method.name, method.doc, attributes=attributes, fields=fields)
 
     def _generate_service(self, service: Service) -> None:
         self.service_generator.generate(

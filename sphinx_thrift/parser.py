@@ -189,7 +189,6 @@ def load_module(filename: str) -> ast.Module:
                 el.attrib[newat] = el.attrib[at]
                 del el.attrib[at]
     root = et.root  # type: ignore
-    print(root.tag, list(root))
     docu = root.find('document')
     assert(docu is not None)
     return parse_module(docu)

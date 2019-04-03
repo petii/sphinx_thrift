@@ -8,8 +8,12 @@ from sphinx.directives import ObjectDescription
 from sphinx.roles import XRefRole
 from sphinx.domains import Domain, ObjType, Index
 from sphinx.roles import XRefRole
-from sphinx.addnodes import desc_signature, desc_annotation, desc_name, desc_type, desc_addname, desc_content
+from sphinx import addnodes
+from sphinx.addnodes import desc_signature, desc_annotation, desc_name, desc_type, desc_addname, desc_content, pending_xref
+from sphinx.util import docfields
+from sphinx.util.nodes import make_refnode
 
+from docutils import nodes
 from docutils.parsers.rst.directives import unchanged, unchanged_required, flag
 
 
@@ -26,7 +30,6 @@ class Signature:
 class ThriftObject(ObjectDescription):
     def add_target_and_index(self, name: Signature, sig: str,
                              signode: desc_signature) -> None:
-        print('add_target_and_index', name, sig, signode)
         if name not in self.state.document.ids:
             signode['names'].append(name)
             signode['ids'].append(name)
@@ -51,10 +54,15 @@ class ThriftConstant(ThriftObject):
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
         signode += desc_annotation(self.objtype, self.objtype)
         module_name = self.options['module'] + '.'
-        # signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
-        type_name = f': {self.options["type"]}'
-        signode += desc_type(type_name, type_name)
+        signode += desc_type(': ', ': ')
+        signode += pending_xref(
+            '',
+            desc_type(self.options["type"], self.options["type"]),
+            refdomain=self.domain,
+            refexplicit=False,
+            reftarget=self.options['type'],
+            reftype='field')
         return Signature(self.objtype, sig, self.options['module'])
 
 
@@ -65,10 +73,15 @@ class ThriftTypedef(ThriftObject):
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
         signode += desc_annotation(self.objtype, self.objtype)
         module_name = self.options['module'] + '.'
-        # signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
-        target_type = f' = {self.options["target"]}'
-        signode += desc_type(target_type, target_type)
+        signode += desc_type(' = ', ' = ')
+        signode += pending_xref(
+            '',
+            desc_type(self.options["target"], self.options["target"]),
+            refdomain=self.domain,
+            refexplicit=False,
+            reftarget=self.options['target'],
+            reftype='field')
         return Signature(self.objtype, sig, self.options['module'])
 
 
@@ -79,13 +92,16 @@ class ThriftEnum(ThriftObject):
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
         signode += desc_annotation(self.objtype, self.objtype)
         module_name = self.options['module'] + '.'
-        # signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
         return Signature(self.objtype, sig, self.options['module'])
 
 
 class ThriftEnumField(ThriftObject):
-    option_spec = {'module': unchanged_required, 'enum': unchanged_required, 'value': unchanged_required}
+    option_spec = {
+        'module': unchanged_required,
+        'enum': unchanged_required,
+        'value': unchanged_required
+    }
 
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
         enum_name = self.options['enum'] + '.'
@@ -104,7 +120,6 @@ class ThriftStruct(ThriftObject):
         annotation = 'exception' if 'exception' in self.options else self.objtype
         signode += desc_annotation(annotation, annotation)
         module_name = self.options['module'] + '.'
-        # signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
         return Signature(self.objtype, sig, self.options['module'])
 
@@ -122,8 +137,14 @@ class ThriftStructField(ThriftObject):
         signode += desc_annotation(annotation, annotation)
         struct_name = self.options['struct'] + '.'
         signode += desc_name(sig, sig)
-        type_name = f': {self.options["type"]}'
-        signode += desc_type(type_name, type_name)
+        signode += desc_type(': ', ': ')
+        signode += pending_xref(
+            '',
+            desc_type(self.options["type"], self.options["type"]),
+            refdomain=self.domain,
+            refexplicit=False,
+            reftarget=self.options['type'],
+            reftype='field')
         return Signature(self.objtype, struct_name + sig,
                          self.options['module'])
 
@@ -157,6 +178,16 @@ class ThriftServiceMethod(ThriftObject):
         'oneway': flag
     }
 
+    doc_field_types = [
+        docfields.TypedField(
+            'parameter',
+            label='Parameters',
+            names=('param', ),
+            typenames=('type', ),
+            typerolename='field',
+            can_collapse=True)
+    ]
+
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
         if 'oneway' in self.options:
             signode += desc_annotation('oneway', 'oneway')
@@ -171,7 +202,13 @@ class ThriftServiceMethod(ThriftObject):
                 first = False
             else:
                 signode += desc_addname(', ', ', ')
-            signode += desc_type(type_ + ' ', type_ + ' ')
+            signode += pending_xref(
+                '',
+                desc_type(type_ + ' ', type_ + ' '),
+                refdomain=self.domain,
+                refexplicit=False,
+                reftarget=type_,
+                reftype='field')
             signode += desc_addname(name, name)
         signode += desc_addname(')', ')')
         return Signature(self.objtype, service_name + sig,
@@ -179,9 +216,16 @@ class ThriftServiceMethod(ThriftObject):
 
 
 class ThriftXRefRole(XRefRole):
+    @staticmethod
+    def find_target(env, target: str) -> Optional[str]:
+        for sig in env.domaindata['thrift']['objects'].keys():
+            if str(sig.module) + '.' + sig.name == target:
+                return target + ':' + sig.kind
+        return None
+
     def process_link(self, env, refnode, has_explicit_title: bool, title: str,
                      target: str) -> Tuple[str, str]:
-        return title, target
+        return title, ThriftXRefRole.find_target(env, target)
 
 
 class ThriftIndex(Index):
@@ -193,7 +237,6 @@ class ThriftIndex(Index):
             self, docnames: Iterable[str] = None
     ) -> Tuple[List[Tuple[str, List[List[Union[str, int]]]]], bool]:
         entries = []
-        print('index.generate', self.domain.data['objects'])
         for name, (docname, objtype,
                    signature) in self.domain.data['objects'].items():
             entries.append([name.name, 0, docname, signature, objtype, '', ''])
@@ -243,3 +286,12 @@ class ThriftDomain(Domain):
     }
     indices = [ThriftIndex]
     initial_data: Dict[str, Any] = {'objects': {}}
+
+    def resolve_xref(self, env, fromdocname, builder, typ, target, node,
+                     contnode):
+        tgt = ThriftXRefRole.find_target(env, target)
+        if tgt is not None:
+            return make_refnode(builder, fromdocname, fromdocname, tgt,
+                                contnode)
+        else:
+            return None
