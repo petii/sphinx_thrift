@@ -1,5 +1,6 @@
-from typing import Any, Tuple, List, Union, Iterable, Dict, Optional
+from typing import Any, Tuple, List, Union, Iterable, Dict, Optional, Callable
 
+import re
 from dataclasses import dataclass
 from itertools import groupby
 
@@ -15,6 +16,36 @@ from sphinx.util.nodes import make_refnode
 
 from docutils import nodes
 from docutils.parsers.rst.directives import unchanged, unchanged_required, flag
+
+list_re = re.compile(r'^(list|set)<(.*)>$')
+map_re = re.compile(r'^map<(.*),(.*)>$')
+
+
+def make_desc_type(content: str) -> desc_type:
+    return desc_type(content, content)
+
+
+def parse_type(typename: str,
+               inner_node: Callable[[str], nodes.Node]) -> List[nodes.Node]:
+    typename = typename.replace(' ', '')
+    m = list_re.match(typename)
+    if m:
+        return [inner_node(m.group(1) + '<')] + parse_type(
+            m.group(2), inner_node) + [inner_node('>')]
+    m = map_re.match(typename)
+    if m:
+        return [inner_node('map<')] + parse_type(m.group(1), inner_node) + [
+            inner_node(', ')
+        ] + parse_type(m.group(2), inner_node) + [inner_node('>')]
+    return [
+        pending_xref(
+            '',
+            inner_node(typename),
+            refdomain='thrift',
+            refexplicit=False,
+            reftarget=typename,
+            reftype='field')
+    ]
 
 
 @dataclass(frozen=True, unsafe_hash=True)
@@ -56,13 +87,7 @@ class ThriftConstant(ThriftObject):
         module_name = self.options['module'] + '.'
         signode += desc_name(sig, sig)
         signode += desc_type(': ', ': ')
-        signode += pending_xref(
-            '',
-            desc_type(self.options["type"], self.options["type"]),
-            refdomain=self.domain,
-            refexplicit=False,
-            reftarget=self.options['type'],
-            reftype='field')
+        signode.extend(parse_type(self.options['type'], make_desc_type))
         return Signature(self.objtype, sig, self.options['module'])
 
 
@@ -75,13 +100,7 @@ class ThriftTypedef(ThriftObject):
         module_name = self.options['module'] + '.'
         signode += desc_name(sig, sig)
         signode += desc_type(' = ', ' = ')
-        signode += pending_xref(
-            '',
-            desc_type(self.options["target"], self.options["target"]),
-            refdomain=self.domain,
-            refexplicit=False,
-            reftarget=self.options['target'],
-            reftype='field')
+        signode.extend(parse_type(self.options['target'], make_desc_type))
         return Signature(self.objtype, sig, self.options['module'])
 
 
@@ -138,13 +157,7 @@ class ThriftStructField(ThriftObject):
         struct_name = self.options['struct'] + '.'
         signode += desc_name(sig, sig)
         signode += desc_type(': ', ': ')
-        signode += pending_xref(
-            '',
-            desc_type(self.options["type"], self.options["type"]),
-            refdomain=self.domain,
-            refexplicit=False,
-            reftarget=self.options['type'],
-            reftype='field')
+        signode.extend(parse_type(self.options['type'], make_desc_type))
         return Signature(self.objtype, struct_name + sig,
                          self.options['module'])
 
@@ -202,13 +215,8 @@ class ThriftServiceMethod(ThriftObject):
                 first = False
             else:
                 signode += desc_addname(', ', ', ')
-            signode += pending_xref(
-                '',
-                desc_type(type_ + ' ', type_ + ' '),
-                refdomain=self.domain,
-                refexplicit=False,
-                reftarget=type_,
-                reftype='field')
+            signode.extend(parse_type(type_, make_desc_type))
+            signode += make_desc_type(' ')
             signode += desc_addname(name, name)
         signode += desc_addname(')', ')')
         return Signature(self.objtype, service_name + sig,

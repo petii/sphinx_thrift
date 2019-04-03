@@ -21,13 +21,13 @@ class Tag(Enum):
 
 
 def parse_list_type(root: ET.Element) -> ast.ListType:
-    value_node = root.find('valueType')
+    value_node = root.find('elemType')
     assert (value_node is not None)
     return ast.ListType(valueType=parse_type(value_node))
 
 
 def parse_set_type(root: ET.Element) -> ast.SetType:
-    value_node = root.find('valueType')
+    value_node = root.find('elemType')
     assert (value_node is not None)
     return ast.SetType(valueType=parse_type(value_node))
 

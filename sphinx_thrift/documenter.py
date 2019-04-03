@@ -114,13 +114,15 @@ class ThriftModuleDocumenter(ThriftDocumenter):
                  check_module: bool = False,
                  all_members: bool = False) -> None:
         from sphinx_thrift.parser import load_module
+        import os.path
 
         self.env.note_dependency(self.filename)
+        base_name = os.path.basename(self.name)
         check_call([
             'thrift', '--gen', 'xml', '--out', self.env.doctreedir,
             self.filename
         ])
-        self.module = load_module(f'{self.env.doctreedir}/{self.name}.xml')
+        self.module = load_module(f'{self.env.doctreedir}/{base_name}.xml')
         self.module_generator.generate(
             self.module.name,
             self.module.doc,
@@ -207,7 +209,7 @@ class ThriftModuleDocumenter(ThriftDocumenter):
         attributes = {
             'module': self.module.name,
             'service': service.name,
-            'return_type': str(method.returnType),
+            'return_type': typeId(method.returnType),
             'parameters': params
         }
         if method.oneway:
@@ -215,7 +217,6 @@ class ThriftModuleDocumenter(ThriftDocumenter):
         fields = []
         for p in method.arguments:
             fields.append(('param', (p.name, p.doc)))
-            fields.append(('type', (p.name, typeId(p.type_))))
         self.method_generator.generate(
             method.name, method.doc, attributes=attributes, fields=fields)
 

@@ -114,6 +114,8 @@ exception InvalidOperation {
   2: string why
 }
 
+typedef list<map<string, set<Work>>> VeryFancyAggregateTD
+
 /**
  * Ahh, now onto the cool part, defining a service. Services just need a name
  * and can optionally inherit from another service using the extends keyword.
