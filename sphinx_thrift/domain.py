@@ -39,6 +39,7 @@ class ThriftObject(ObjectDescription):
 
 class ThriftModule(ThriftObject):
     def handle_signature(self, sig: str, signode: Any) -> Signature:
+        signode += desc_annotation('module ', 'module ')
         signode += desc_name(sig, sig)
         return Signature(self.objtype, sig, None)
 
@@ -50,7 +51,7 @@ class ThriftConstant(ThriftObject):
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
         signode += desc_annotation(self.objtype, self.objtype)
         module_name = self.options['module'] + '.'
-        signode += desc_addname(module_name, module_name)
+        # signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
         type_name = f': {self.options["type"]}'
         signode += desc_type(type_name, type_name)
@@ -64,7 +65,7 @@ class ThriftTypedef(ThriftObject):
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
         signode += desc_annotation(self.objtype, self.objtype)
         module_name = self.options['module'] + '.'
-        signode += desc_addname(module_name, module_name)
+        # signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
         target_type = f' = {self.options["target"]}'
         signode += desc_type(target_type, target_type)
@@ -78,18 +79,20 @@ class ThriftEnum(ThriftObject):
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
         signode += desc_annotation(self.objtype, self.objtype)
         module_name = self.options['module'] + '.'
-        signode += desc_addname(module_name, module_name)
+        # signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
         return Signature(self.objtype, sig, self.options['module'])
 
 
 class ThriftEnumField(ThriftObject):
-    option_spec = {'module': unchanged_required, 'enum': unchanged_required}
+    option_spec = {'module': unchanged_required, 'enum': unchanged_required, 'value': unchanged_required}
 
     def handle_signature(self, sig: str, signode: desc_signature) -> Signature:
         enum_name = self.options['enum'] + '.'
         signode += desc_addname(enum_name, enum_name)
         signode += desc_name(sig, sig)
+        signode += desc_annotation(' = ' + self.options['value'],
+                                   ' = ' + self.options['value'])
         return Signature(self.objtype, enum_name + sig, self.options['module'])
 
 
@@ -101,7 +104,7 @@ class ThriftStruct(ThriftObject):
         annotation = 'exception' if 'exception' in self.options else self.objtype
         signode += desc_annotation(annotation, annotation)
         module_name = self.options['module'] + '.'
-        signode += desc_addname(module_name, module_name)
+        # signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
         return Signature(self.objtype, sig, self.options['module'])
 
@@ -133,7 +136,7 @@ class ThriftService(ThriftObject):
         annotation = 'service'
         signode += desc_annotation(annotation, annotation)
         module_name = self.options['module'] + '.'
-        signode += desc_addname(module_name, module_name)
+        # signode += desc_addname(module_name, module_name)
         signode += desc_name(sig, sig)
         return Signature(self.objtype, sig, self.options['module'])
 

@@ -129,7 +129,7 @@ def parse_exception(root: ET.Element) -> ast.Struct:
     return ast.Struct(
         name=root.attrib['name'],
         doc=root.get('doc', ''),
-        isException=False,
+        isException=True,
         isUnion=False,
         fields=[parse_field(f) for f in root if f.tag == Tag.FIELD.value])
 
@@ -170,6 +170,8 @@ def parse_module(root: ET.Element) -> ast.Module:
         enums=[parse_enum(enum) for enum in root.findall(Tag.ENUM.value)],
         structs=[
             parse_struct(struct) for struct in root.findall(Tag.STRUCT.value)
+        ] + [
+            parse_exception(exc) for exc in root.findall(Tag.EXCEPTION.value)
         ],
         services=[
             parse_service(service) for service in root.findall(Tag.SERVICE.value)
