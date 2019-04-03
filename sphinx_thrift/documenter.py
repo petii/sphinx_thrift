@@ -16,11 +16,11 @@ def typeId(type_: ast.Type) -> str:
         ast.SetType:
         lambda p: 'set<{}>'.format(typeId(p.valueType)),
         ast.MapType:
-        lambda p: 'map<{}, {}>'.format(typeId(p.keyType), typeId(p.valueType)),
+        lambda p: 'map<{},{}>'.format(typeId(p.keyType), typeId(p.valueType)),
         ast.ReferenceType:
         lambda r: (r.module + '.' if r.module else '') + r.name,
         str:
-        lambda s: s
+        lambda s: s.strip()
     }
     return dispatch[type_.__class__](type_)
 
