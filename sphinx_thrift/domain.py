@@ -248,14 +248,14 @@ class ThriftServiceMethod(ThriftObject):
 class ThriftXRefRole(XRefRole):
     @staticmethod
     def find_target(env, target: str) -> Optional[str]:
-        for sig in env.domaindata['thrift']['objects'].keys():
+        for sig, obj in env.domaindata['thrift']['objects'].items():
             if str(sig.module) + '.' + sig.name == target:
-                return target + ':' + sig.kind
+                return (obj[0],f'{sig.module}.{sig.name}:{sig.kind}')
         return None
 
     def process_link(self, env, refnode, has_explicit_title: bool, title: str,
                      target: str) -> Tuple[str, str]:
-        return title, ThriftXRefRole.find_target(env, target)
+        return title, target
 
 
 class ThriftIndex(Index):
@@ -312,7 +312,8 @@ class ThriftDomain(Domain):
         'enum_field': ThriftXRefRole(),
         'struct': ThriftXRefRole(),
         'struct_field': ThriftXRefRole(),
-        'service': ThriftXRefRole()
+        'service': ThriftXRefRole(),
+        'service_method': ThriftXRefRole()
     }
     indices = [ThriftIndex]
     initial_data: Dict[str, Any] = {'objects': {}}
@@ -320,8 +321,9 @@ class ThriftDomain(Domain):
     def resolve_xref(self, env, fromdocname, builder, typ, target, node,
                      contnode):
         tgt = ThriftXRefRole.find_target(env, target)
+        print(target, tgt)
         if tgt is not None:
-            return make_refnode(builder, fromdocname, fromdocname, tgt,
+            return make_refnode(builder, fromdocname, *tgt,
                                 contnode)
         else:
             return None

@@ -4,22 +4,22 @@ Cross References test page
 
 :thrift:module:`Example`
 
-:thrift:namespace:`tutorial`
+:thrift:namespace:`Example.tutorial`
 
-:thrift:constant:`MAPCONSTANT`
+:thrift:constant:`Example.MAPCONSTANT`
 
-:thrift:typedef:`MyInteger`
+:thrift:typedef:`Example.MyInteger`
 
-:thrift:enum:`Operation`
+:thrift:enum:`Example.Operation`
 
-:thrift:enum_field:`Operation.ADD`
+:thrift:enum_field:`Example.Operation.ADD`
 
-:thrift:struct:`Work`
+:thrift:struct:`Example.Work`
 
-:thrift:struct_field:`Work.comment`
+:thrift:struct_field:`Example.Work.comment`
 
-:thrift:exception:`InvalidOperation`
+:thrift:exception:`Example.InvalidOperation`
 
-:thrift:service:`Calculator`
+:thrift:service:`Example.Calculator`
 
-:thrift:service_method:`Calculator.ping`
+:thrift:service_method:`Example.Calculator.ping`
