@@ -12,6 +12,7 @@ Welcome to Thrift Example's documentation!
 
    usage
    reference
+   xreftest
 
 
 Indices and tables
