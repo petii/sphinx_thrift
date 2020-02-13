@@ -247,15 +247,16 @@ class ThriftServiceMethod(ThriftObject):
 
 class ThriftXRefRole(XRefRole):
     @staticmethod
-    def find_target(env, typ: str, target: str) -> Optional[Tuple[str,str]]:
+    def find_target(env, typ: str, target: str) -> Optional[Tuple[str, str]]:
         if typ == 'module':
             target = f'None.{target}'
         moduleless_results = []
         for sig, obj in env.domaindata['thrift']['objects'].items():
             if str(sig.module) + '.' + sig.name == target:
-                return (obj[0],f'{sig.module}.{sig.name}:{sig.kind}')
+                return (obj[0], f'{sig.module}.{sig.name}:{sig.kind}')
             if sig.name == target:
-                moduleless_results.append((obj[0],f'{sig.module}.{sig.name}:{sig.kind}'))
+                moduleless_results.append(
+                    (obj[0], f'{sig.module}.{sig.name}:{sig.kind}'))
         if len(moduleless_results) == 1:
             return moduleless_results[0]
         elif len(moduleless_results) > 1:
@@ -288,7 +289,6 @@ class ThriftIndex(Index):
                 content[key] = []
             content[key].extend(group)
         return sorted(content.items(), key=lambda t: t[0]), False
-
 
 class ThriftDomain(Domain):
     name = 'thrift'
@@ -333,7 +333,7 @@ class ThriftDomain(Domain):
                      contnode):
         tgt = ThriftXRefRole.find_target(env, typ, target)
         if tgt is not None:
-            return make_refnode(builder, fromdocname, *tgt,
-                                contnode)
+            todoc, ref = tgt
+            return make_refnode(builder, fromdocname, todoc, ref, contnode)
         else:
             return None
