@@ -11,7 +11,7 @@ from sphinx.domains import Domain, ObjType, Index
 from sphinx.roles import XRefRole
 from sphinx import addnodes
 from sphinx.addnodes import desc_signature, desc_annotation, desc_name, desc_type, desc_addname, desc_content, pending_xref
-from sphinx.util import docfields
+from sphinx.util import docfields, logging
 from sphinx.util.nodes import make_refnode
 
 from docutils import nodes
@@ -247,13 +247,22 @@ class ThriftServiceMethod(ThriftObject):
 
 class ThriftXRefRole(XRefRole):
     @staticmethod
-    def find_target(env, typ: str, target: str) -> Optional[str]:
+    def find_target(env, typ: str, target: str) -> Optional[Tuple[str,str]]:
         if typ == 'module':
             target = f'None.{target}'
+        moduleless_results = []
         for sig, obj in env.domaindata['thrift']['objects'].items():
             if str(sig.module) + '.' + sig.name == target:
                 return (obj[0],f'{sig.module}.{sig.name}:{sig.kind}')
-        # TODO: try searching without specific module
+            if sig.name == target:
+                moduleless_results.append((obj[0],f'{sig.module}.{sig.name}:{sig.kind}'))
+        if len(moduleless_results) == 1:
+            return moduleless_results[0]
+        elif len(moduleless_results) > 1:
+            logger = logging.getLogger(__name__)
+            logger.warning(f'Multiple targets found for {target}:')
+            for tgt in moduleless_results:
+                logger.warning(f'   {tgt[0]}: {tgt[1]}')
         return None
 
     def process_link(self, env, refnode, has_explicit_title: bool, title: str,
