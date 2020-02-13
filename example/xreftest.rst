@@ -20,6 +20,8 @@ Cross References test page
 
 :thrift:exception:`Example.InvalidOperation`
 
+:thrift:exception_field:`Example.InvalidOperation.why`
+
 :thrift:service:`Example.Calculator`
 
 :thrift:service_method:`Example.Calculator.ping`
@@ -45,6 +47,8 @@ Titled crossrefs
 
 :thrift:exception:`Titled exception ref <Example.InvalidOperation>`
 
+:thrift:exception_field:`Titled exception_field ref <Example.InvalidOperation.why>`
+
 :thrift:service:`Titled service ref <Example.Calculator>`
 
 :thrift:service_method:`Titled service_method ref <Example.Calculator.ping>`
@@ -69,6 +73,8 @@ Crossrefs without explicit module
 :thrift:struct_field:`Work.comment`
 
 :thrift:exception:`InvalidOperation`
+
+:thrift:exception_field:`InvalidOperation.why`
 
 :thrift:service:`Calculator`
 

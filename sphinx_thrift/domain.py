@@ -301,6 +301,8 @@ class ThriftDomain(Domain):
         'enum_field': ObjType('enum_field', 'enum_field'),
         'struct': ObjType('struct', 'struct'),
         'struct_field': ObjType('struct_field', 'struct_field'),
+        'exception': ObjType('struct', 'struct'),
+        'exception_field': ObjType('struct_field', 'struct_field'),
         'service': ObjType('service', 'service'),
         'service_method': ObjType('service_method', 'service_method')
     }
@@ -312,6 +314,8 @@ class ThriftDomain(Domain):
         'enum_field': ThriftEnumField,
         'struct': ThriftStruct,
         'struct_field': ThriftStructField,
+        'exception': ThriftStruct,
+        'exception_field': ThriftStructField,
         'service': ThriftService,
         'service_method': ThriftServiceMethod
     }
@@ -323,6 +327,8 @@ class ThriftDomain(Domain):
         'enum_field': ThriftXRefRole(),
         'struct': ThriftXRefRole(),
         'struct_field': ThriftXRefRole(),
+        'exception': ThriftXRefRole(),
+        'exception_field': ThriftXRefRole(),
         'service': ThriftXRefRole(),
         'service_method': ThriftXRefRole()
     }
