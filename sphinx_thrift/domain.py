@@ -247,10 +247,13 @@ class ThriftServiceMethod(ThriftObject):
 
 class ThriftXRefRole(XRefRole):
     @staticmethod
-    def find_target(env, target: str) -> Optional[str]:
+    def find_target(env, typ: str, target: str) -> Optional[str]:
+        if typ == 'module':
+            target = f'None.{target}'
         for sig, obj in env.domaindata['thrift']['objects'].items():
             if str(sig.module) + '.' + sig.name == target:
                 return (obj[0],f'{sig.module}.{sig.name}:{sig.kind}')
+        # TODO: try searching without specific module
         return None
 
     def process_link(self, env, refnode, has_explicit_title: bool, title: str,
@@ -305,7 +308,6 @@ class ThriftDomain(Domain):
     }
     roles = {
         'module': ThriftXRefRole(),
-        'namespace': ThriftXRefRole(),
         'constant': ThriftXRefRole(),
         'typedef': ThriftXRefRole(),
         'enum': ThriftXRefRole(),
@@ -320,8 +322,7 @@ class ThriftDomain(Domain):
 
     def resolve_xref(self, env, fromdocname, builder, typ, target, node,
                      contnode):
-        tgt = ThriftXRefRole.find_target(env, target)
-        print(target, tgt)
+        tgt = ThriftXRefRole.find_target(env, typ, target)
         if tgt is not None:
             return make_refnode(builder, fromdocname, *tgt,
                                 contnode)
