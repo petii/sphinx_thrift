@@ -252,7 +252,7 @@ class ThriftXRefRole(XRefRole):
             target = f'None.{target}'
         moduleless_results = []
         for sig, obj in env.domaindata['thrift']['objects'].items():
-            if str(sig.module) + '.' + sig.name == target:
+            if f'{sig.module}.{sig.name}' == target:
                 return (obj[0], f'{sig.module}.{sig.name}:{sig.kind}')
             if sig.name == target:
                 moduleless_results.append(
@@ -261,7 +261,7 @@ class ThriftXRefRole(XRefRole):
             return moduleless_results[0]
         elif len(moduleless_results) > 1:
             logger = logging.getLogger(__name__)
-            logger.warning(f'Multiple targets found for {target}:')
+            logger.warning(f'{target} is ambiguous. Possible resolutions:')
             for tgt in moduleless_results:
                 logger.warning(f'   {tgt[0]}: {tgt[1]}')
         return None
@@ -289,6 +289,7 @@ class ThriftIndex(Index):
                 content[key] = []
             content[key].extend(group)
         return sorted(content.items(), key=lambda t: t[0]), False
+
 
 class ThriftDomain(Domain):
     name = 'thrift'
@@ -337,9 +338,9 @@ class ThriftDomain(Domain):
 
     def resolve_xref(self, env, fromdocname, builder, typ, target, node,
                      contnode):
-        tgt = ThriftXRefRole.find_target(env, typ, target)
-        if tgt is not None:
-            todoc, ref = tgt
-            return make_refnode(builder, fromdocname, todoc, ref, contnode)
+        targetdata = ThriftXRefRole.find_target(env, typ, target)
+        if targetdata is not None:
+            todoc, tgt = targetdata
+            return make_refnode(builder, fromdocname, todoc, tgt, contnode)
         else:
             return None
